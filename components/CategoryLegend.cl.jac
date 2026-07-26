@@ -61,7 +61,7 @@ def:pub CategoryLegend(
                 />
             }
         } else {
-            <div className="legend-dots">
+            <div key="dots" className="legend-dots">
                 {for name in categories() {
                     <LegendDot
                         key={name}

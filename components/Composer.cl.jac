@@ -12,11 +12,11 @@ def:pub CatPick(name: str, label: str, on: bool, onPick: Callable[[str], None]) 
         onPick(name);
     }
 
-    tint = cat_color(name) if name else "#8b8ba8";
+    tint = cat_color(name) if name else "#9a9eb0";
     style: dict[str, object] = {
-        "borderColor": tint if on else "#23233a",
-        "background": tint + "26" if on else "#ffffff08",
-        "color": tint if on else "#8b8ba8"
+        "borderColor": tint if on else "#262833",
+        "background": tint + "26" if on else "transparent",
+        "color": tint if on else "#9a9eb0"
     };
 
     return <button className={"cat-pick on" if on else "cat-pick"} style={style} onClick={handle}>

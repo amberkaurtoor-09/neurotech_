@@ -1,28 +1,67 @@
 /* Neurotech - a second brain you can see.
-   Mobile-first: every layout decision assumes a 375px phone, then relaxes. */
+   Mobile-first: every layout decision assumes a 375px phone, then relaxes.
+
+   Design tokens: one accent, a 5-step type scale, a 4px spacing grid and
+   two corner radii. Every component below composes from these - no ad-hoc
+   values. */
 
 :root {
-  --bg: #06060c;
-  --bg-elev: #101019;
-  --bg-sheet: #14141f;
-  --border: #23233a;
-  --text: #f4f4ff;
-  --muted: #8b8ba8;
-  --accent: #7c5cff;
-  --accent-soft: #6d4aff33;
+  /* Surfaces */
+  --bg: #0a0b0f;
+  --bg-elev: #121319;
+  --bg-sheet: #16171f;
+  --bg-overlay: #101118f2;
+  --border: #262833;
+  --border-strong: #343744;
 
-  --cat-idea: #8b7cf6;
-  --cat-memory: #f472b6;
-  --cat-goal: #fbbf24;
-  --cat-learning: #34d399;
-  --cat-health: #22d3ee;
-  --cat-reflection: #c084fc;
+  /* Text */
+  --text: #eef0f6;
+  --text-2: #9a9eb0;
+  --text-3: #6b6f80;
+
+  /* Accent - one hue, three strengths */
+  --accent: #6d7cfa;
+  --accent-strong: #5865f2;
+  --accent-soft: #6d7cfa1f;
+
+  /* Danger */
+  --danger: #e5697c;
+  --danger-soft: #e5697c1a;
+
+  /* Category palette - desaturated so data reads calmly.
+     Mirrors CAT_COLORS in components/palette.cl.jac. */
+  --cat-idea: #7d8cf0;
+  --cat-memory: #d97ba2;
+  --cat-goal: #cfa356;
+  --cat-learning: #5cb894;
+  --cat-health: #58aec4;
+  --cat-reflection: #a488d9;
+
+  /* Type scale */
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
+  --fs-xl: 22px;
+
+  /* Radii */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
 
   --tabbar-h: 64px;
   --header-h: 60px;
 }
 
 * { box-sizing: border-box; }
+
+/* Micro-interactions: every control eases over 150ms; :active rules below
+   then read as springy presses instead of snaps. */
+button {
+  transition: transform 150ms ease, opacity 150ms ease,
+              background-color 150ms ease, border-color 150ms ease,
+              color 150ms ease;
+}
 
 html, body, #root {
   height: 100%;
@@ -47,30 +86,7 @@ body {
   max-width: 520px;
   margin: 0 auto;
   overflow: hidden;
-  background:
-    radial-gradient(900px 500px at 50% -10%, #16123a 0%, transparent 60%),
-    var(--bg);
-}
-
-/* Drifting starfield behind the graph. Pure CSS - no animation loop. */
-.starfield {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1.4px 1.4px at 12% 18%, #6d5cff88 50%, transparent),
-    radial-gradient(1px 1px at 68% 12%, #8b7cf655 50%, transparent),
-    radial-gradient(1.6px 1.6px at 32% 62%, #a78bfa44 50%, transparent),
-    radial-gradient(1px 1px at 84% 48%, #7c5cff66 50%, transparent),
-    radial-gradient(1.2px 1.2px at 22% 88%, #6d5cff55 50%, transparent),
-    radial-gradient(1px 1px at 56% 76%, #c084fc44 50%, transparent),
-    radial-gradient(1.3px 1.3px at 92% 82%, #8b7cf644 50%, transparent);
-  animation: drift 90s linear infinite alternate;
-}
-
-@keyframes drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(-14px, -10px, 0) scale(1.06); }
+  background: var(--bg);
 }
 
 /* ── Header ────────────────────────────────────────────────────────── */
@@ -84,23 +100,23 @@ body {
   height: var(--header-h);
   padding: 0 16px;
   padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
 }
 
 .logo {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(150deg, #8b6dff, #6532e8);
-  box-shadow: 0 6px 20px -4px #7c5cffaa;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--accent-strong);
   flex: 0 0 auto;
 }
 
 .brand-name {
   margin: 0;
-  font-size: 19px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -108,8 +124,8 @@ body {
 
 .brand-tag {
   margin: 0;
-  font-size: 12.5px;
-  color: var(--muted);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
   line-height: 1.3;
 }
 
@@ -117,13 +133,13 @@ body {
   position: relative;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   margin-left: auto;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #ffffff08;
-  color: var(--text);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
   cursor: pointer;
 }
 
@@ -131,13 +147,13 @@ body {
 
 .dot {
   position: absolute;
-  top: 9px;
-  right: 10px;
-  width: 7px;
-  height: 7px;
+  top: 8px;
+  right: 9px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 2px var(--bg-elev);
+  box-shadow: 0 0 0 2px var(--bg);
 }
 
 /* ── Main scroll area ──────────────────────────────────────────────── */
@@ -157,6 +173,17 @@ body {
   padding: 4px 16px calc(var(--tabbar-h) + 28px);
 }
 
+/* Tab switches slide the incoming view up through a fade. Only direct
+   children of the stage, so the inner graph canvas doesn't double-fade. */
+.stage > .scroll,
+.stage > .graph-wrap {
+  animation: view-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
 /* ── Brain graph ───────────────────────────────────────────────────── */
 
 .graph-wrap {
@@ -169,43 +196,59 @@ body {
   height: 100%;
   display: block;
   touch-action: none;
+  cursor: grab;
 }
 
-/* Links. `builds` edges are dashed so skill wiring reads differently from
-   thought-to-thought relatedness at a glance. */
+.graph-svg.panning { cursor: grabbing; }
+
+/* Links. Curved beziers; opacity encodes weight (set inline). `builds`
+   edges are tinted toward the accent so skill wiring reads differently
+   from thought-to-thought relatedness. Each path draws itself in on mount
+   via the pathLength=1 dash trick. */
 .glink {
-  stroke: #7c5cff;
-  stroke-opacity: 0.26;
+  stroke: #565d80;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: edge-draw 700ms ease 150ms backwards;
   transition: stroke-opacity 200ms ease;
 }
 
-.glink.dim { stroke-opacity: 0.06; }
-.glink.lit { stroke: #a78bfa; stroke-opacity: 0.75; }
+.glink.builds { stroke: #8a86e8; }
 
+@keyframes edge-draw {
+  from { stroke-dashoffset: 1; }
+}
+
+/* Nodes spring into place, staggered by index (delay set inline). */
 .gnode {
   cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: node-in 550ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
   transition: opacity 200ms ease;
+}
+
+@keyframes node-in {
+  from { opacity: 0; transform: scale(0); }
 }
 
 .gnode.dim { opacity: 0.16; }
 
 .gnode-core { transition: r 200ms ease; }
 
-.gnode-glow {
-  opacity: 0.22;
-  animation: pulse 3s ease-in-out infinite;
-}
+.gnode-glow { opacity: 0.18; }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.12; }
-  50%      { opacity: 0.34; }
+/* Mastery ring on skill nodes - the arc animates when reps change. */
+.gnode-ring {
+  opacity: 0.9;
+  transition: stroke-dasharray 600ms ease;
 }
 
 .glabel {
   font-size: 21px;
   font-weight: 550;
   paint-order: stroke;
-  stroke: #06060c;
+  stroke: #0a0b0f;
   stroke-width: 5px;
   pointer-events: none;
 }
@@ -215,45 +258,124 @@ body {
   font-weight: 700;
 }
 
-/* Detail peek for the focused node */
-.peek {
+/* Zoom controls */
+.zoom-controls {
   position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 10px;
-  padding: 12px 14px;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  background: #0b0b14e6;
+  border-radius: var(--r-sm);
+  background: var(--bg-overlay);
   backdrop-filter: blur(10px);
-  animation: fade 180ms ease;
+  overflow: hidden;
 }
 
-.peek-kind {
-  display: inline-block;
-  margin-bottom: 6px;
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
+.zoom-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: var(--fs-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zoom-btn:active { background: var(--accent-soft); color: var(--text); }
+.zoom-btn + .zoom-btn { border-top: 1px solid var(--border); }
+
+/* ── Node detail sheet ─────────────────────────────────────────────── */
+
+.node-sheet {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--tabbar-h) + 12px);
+  z-index: 8;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-overlay);
+  backdrop-filter: blur(12px);
+  animation: rise 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.node-sheet-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.node-kind {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  font-weight: 600;
 }
 
-.peek-text {
+.node-close {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff0d;
+  color: var(--text-2);
+  font-size: var(--fs-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.node-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.5;
 }
+
+.node-neighbors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.node-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.node-del {
+  padding: 8px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.node-del:active { transform: scale(0.97); }
 
 /* Secondary button, used for demo seeding and destructive actions */
 .ghost-btn {
   margin-top: 16px;
   padding: 11px 20px;
-  border: 1px solid #3a2f7a;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  background: #ffffff08;
+  background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   pointer-events: auto;
@@ -261,7 +383,7 @@ body {
 
 .ghost-btn:active { transform: scale(0.97); }
 .ghost-btn:disabled { opacity: 0.5; }
-.ghost-btn.wide { width: 100%; margin-top: 0; border-color: #5a2440; color: #f4a3c0; }
+.ghost-btn.wide { width: 100%; margin-top: 0; border-color: var(--danger); color: var(--danger); }
 
 /* Skill tags on a feed card */
 .build-strip {
@@ -273,13 +395,13 @@ body {
 
 .build-tag {
   padding: 3px 9px;
-  border: 1px solid #35356a;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  font-size: 11px;
-  color: #c9d1ff;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
 }
 
-.skill-name { font-size: 15px; font-weight: 650; }
+.skill-name { font-size: var(--fs-md); font-weight: 650; }
 
 .count-pill {
   position: absolute;
@@ -288,10 +410,10 @@ body {
   padding: 7px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: #0d0d18cc;
+  background: var(--bg-overlay);
   backdrop-filter: blur(8px);
-  font-size: 12.5px;
-  color: var(--muted);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
 }
 
 .count-pill b { color: var(--text); font-weight: 700; }
@@ -304,8 +426,8 @@ body {
   bottom: 12px;
   padding: 9px 12px 11px;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  background: #0b0b14d9;
+  border-radius: var(--r-md);
+  background: var(--bg-overlay);
   backdrop-filter: blur(10px);
 }
 
@@ -321,16 +443,16 @@ body {
 }
 
 .legend-title {
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: var(--muted);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  color: var(--text-2);
   text-transform: uppercase;
 }
 
 .legend-caret {
   margin-left: auto;
-  color: var(--muted);
-  font-size: 14px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
   line-height: 1;
 }
 
@@ -343,7 +465,7 @@ body {
   border: 0;
   background: none;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   width: 100%;
   text-align: left;
@@ -375,7 +497,7 @@ body {
 
 .legend-dot.off { opacity: 0.28; }
 
-/* ── Empty state ───────────────────────────────────────────────────── */
+/* ── Empty / onboarding state ──────────────────────────────────────── */
 
 .empty {
   position: absolute;
@@ -389,17 +511,165 @@ body {
   pointer-events: none;
 }
 
-.empty h2 { margin: 0; font-size: 19px; font-weight: 650; }
-.empty p  { margin: 0; font-size: 14px; color: var(--muted); max-width: 30ch; line-height: 1.5; }
+.empty h2 { margin: 0; font-size: var(--fs-lg); font-weight: 650; }
+.empty p  { margin: 0; font-size: var(--fs-sm); color: var(--text-2); max-width: 32ch; line-height: 1.5; }
+
+.onboard-steps {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 4px;
+  text-align: left;
+}
+
+.onboard-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.onboard-num {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+/* ── Loading & error states ────────────────────────────────────────── */
+
+/* Skeleton graph: placeholder neurons breathing where the data will land. */
+.skeleton-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.skel-node {
+  position: absolute;
+  border-radius: 50%;
+  background: #1d1f2b;
+  animation: skel-pulse 1.5s ease-in-out infinite;
+}
+
+.skel-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24%;
+  text-align: center;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  animation: skel-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skel-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.9; }
+}
+
+.toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(var(--header-h) + 8px);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--danger);
+  border-radius: var(--r-md);
+  background: var(--bg-sheet);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  animation: fade 180ms ease;
+}
+
+.toast-dismiss {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+/* ── Confirm dialog ────────────────────────────────────────────────── */
+
+.confirm-card {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  padding: 20px 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-sheet);
+  animation: fade 160ms ease;
+}
+
+.confirm-card h3 {
+  margin: 0 0 6px;
+  font-size: var(--fs-lg);
+  font-weight: 650;
+}
+
+.confirm-card p {
+  margin: 0 0 16px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-cancel {
+  flex: 1;
+  padding: 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirm-go {
+  flex: 1;
+  padding: 11px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--danger);
+  color: #fff;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.confirm-cancel:active, .confirm-go:active { transform: scale(0.98); }
 
 /* ── Feed ──────────────────────────────────────────────────────────── */
 
 .section-title {
   margin: 14px 2px 12px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text-2);
 }
 
 .card {
@@ -407,8 +677,17 @@ body {
   padding: 14px 15px;
   margin-bottom: 10px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--r-md);
   background: var(--bg-elev);
+}
+
+/* Staggered feed entrance (delay set inline per card). */
+.card.enter {
+  animation: card-in 360ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
 }
 
 .card-top {
@@ -421,7 +700,7 @@ body {
 .chip {
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: capitalize;
@@ -429,28 +708,28 @@ body {
 
 .card-meta {
   margin-left: auto;
-  font-size: 11.5px;
-  color: var(--muted);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
 }
 
 .card-text {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-md);
   line-height: 1.5;
 }
 
 .card-links {
   margin: 9px 0 0;
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
 }
 
 .card-del {
   margin-left: 8px;
   border: 0;
   background: none;
-  color: #6b6b85;
-  font-size: 12px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
   cursor: pointer;
 }
 
@@ -466,22 +745,22 @@ body {
 .stat {
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--r-md);
   background: var(--bg-elev);
 }
 
-.stat-num { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
-.stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stat-num { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.02em; }
+.stat-lbl { font-size: var(--fs-xs); color: var(--text-2); margin-top: 2px; }
 
 .bar-row {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 9px;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
 }
 
-.bar-name { width: 84px; text-transform: capitalize; color: var(--muted); }
+.bar-name { width: 84px; text-transform: capitalize; color: var(--text-2); }
 
 /* display:block matters: these are <span>s, and an inline box ignores both
    height and width, so the bars render as empty tracks without it. */
@@ -502,7 +781,7 @@ body {
   transition: width 400ms ease;
 }
 
-.bar-val { width: 22px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar-val { width: 22px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
 
 /* ── Tab bar ───────────────────────────────────────────────────────── */
 
@@ -515,7 +794,7 @@ body {
   height: var(--tabbar-h);
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid var(--border);
-  background: #08080ff2;
+  background: var(--bg-overlay);
   backdrop-filter: blur(14px);
   flex: 0 0 auto;
 }
@@ -527,8 +806,8 @@ body {
   gap: 3px;
   border: 0;
   background: none;
-  color: #5f5f78;
-  font-size: 10.5px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
   font-weight: 550;
   cursor: pointer;
   padding: 0;
@@ -539,15 +818,15 @@ body {
 .fab {
   display: grid;
   place-items: center;
-  width: 58px;
-  height: 58px;
+  width: 56px;
+  height: 56px;
   margin: 0 auto;
-  margin-top: -26px;
+  margin-top: -24px;
   border: 0;
   border-radius: 50%;
-  background: linear-gradient(150deg, #8b6dff, #6532e8);
+  background: var(--accent-strong);
   color: #fff;
-  box-shadow: 0 10px 26px -6px #7c5cffcc;
+  box-shadow: 0 8px 20px -8px #5865f2b0;
   cursor: pointer;
 }
 
@@ -573,7 +852,7 @@ body {
   bottom: 0;
   z-index: 21;
   padding: 10px 16px calc(18px + env(safe-area-inset-bottom));
-  border-radius: 24px 24px 0 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
   border-top: 1px solid var(--border);
   background: var(--bg-sheet);
   animation: rise 240ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -586,18 +865,18 @@ body {
   height: 4px;
   margin: 0 auto 14px;
   border-radius: 999px;
-  background: #3a3a55;
+  background: var(--border-strong);
 }
 
-.sheet h3 { margin: 0 0 12px; font-size: 17px; font-weight: 650; }
+.sheet h3 { margin: 0 0 12px; font-size: var(--fs-lg); font-weight: 650; }
 
 .composer-input {
   width: 100%;
   min-height: 104px;
   padding: 13px 14px;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: #0b0b14;
+  border-radius: var(--r-md);
+  background: var(--bg);
   color: var(--text);
   font: inherit;
   font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
@@ -606,8 +885,8 @@ body {
   outline: none;
 }
 
-.composer-input:focus { border-color: #4b3aa8; }
-.composer-input::placeholder { color: #55556e; }
+.composer-input:focus { border-color: var(--accent); }
+.composer-input::placeholder { color: var(--text-3); }
 
 .cat-strip {
   display: flex;
@@ -620,9 +899,9 @@ body {
   padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: #ffffff08;
-  color: var(--muted);
-  font-size: 12.5px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
   font-weight: 550;
   text-transform: capitalize;
   cursor: pointer;
@@ -634,11 +913,11 @@ body {
   width: 100%;
   padding: 14px;
   border: 0;
-  border-radius: 14px;
-  background: linear-gradient(150deg, #8b6dff, #6532e8);
+  border-radius: var(--r-md);
+  background: var(--accent-strong);
   color: #fff;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 650;
   cursor: pointer;
 }
@@ -652,7 +931,7 @@ body {
 
 .hint {
   margin: 10px 0 0;
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
   text-align: center;
 }

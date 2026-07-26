@@ -14,6 +14,7 @@ def:pub short_date(iso: str) -> str {
 
 def:pub ThoughtCard(
     item: GraphNode,
+    index: int,
     peers: int,
     builds: list[str],
     onDelete: Callable[[str], None]
@@ -24,7 +25,13 @@ def:pub ThoughtCard(
 
     tint = cat_color(item.category);
 
-    return <article className="card">
+    # Staggered entrance, capped so a long feed doesn't feel sluggish.
+    delay = index * 45;
+    if delay > 450 {
+        delay = 450;
+    }
+
+    return <article className="card enter" style={{"animationDelay": str(delay) + "ms"}}>
         <div className="card-top">
             <span className="chip" style={{"background": tint + "26", "color": tint}}>
                 {item.category}
@@ -79,10 +86,11 @@ def:pub Feed(
             <p className="card-links">Nothing captured yet.</p>
             skip;
         }}
-        {for t in ordered {
+        {for (i, t) in enumerate(ordered) {
             <ThoughtCard
                 key={t.id}
                 item={t}
+                index={i}
                 peers={peers[t.id] if t.id in peers else 0}
                 builds={builds[t.id] if t.id in builds else []}
                 onDelete={onDelete}

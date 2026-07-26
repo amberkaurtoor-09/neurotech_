@@ -29,7 +29,7 @@ def:pub SkillCard(skill: SkillView) -> JsxElement {
         <div className="bar-track">
             <span
                 className="bar-fill"
-                style={{"width": str(pct) + "%", "background": "linear-gradient(90deg,#6d4aff,#a78bfa)"}}
+                style={{"width": str(pct) + "%", "background": "#6d7cfa"}}
             ></span>
         </div>
         <p className="card-links">
