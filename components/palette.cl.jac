@@ -9,12 +9,12 @@ glob CATEGORY_ORDER: list[str] = [
 ];
 
 glob CAT_COLORS: dict[str, str] = {
-    "idea": "#7d8cf0",
-    "memory": "#d97ba2",
-    "goal": "#cfa356",
-    "learning": "#5cb894",
-    "health": "#58aec4",
-    "reflection": "#a488d9"
+    "idea": "#5b8cff",
+    "memory": "#d889b4",
+    "goal": "#e8a35c",
+    "learning": "#5ecf9a",
+    "health": "#7eb6c9",
+    "reflection": "#b4a0d8"
 };
 
 """The canonical category order.
@@ -32,7 +32,7 @@ def:pub cat_color(name: str) -> str {
     if name in CAT_COLORS {
         return CAT_COLORS[name];
     }
-    return "#7d8cf0";
+    return "#5b8cff";
 }
 
 """Node radius. Skills read as hubs; thoughts grow with how often they connect."""
