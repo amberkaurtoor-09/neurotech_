@@ -1,6 +1,6 @@
 """Chronological list view - the readable counterpart to the graph."""
 
-sv import from endpoints { ThoughtView, LinkView }
+sv import from endpoints { GraphNode, GraphLink }
 
 import from .palette { cat_color }
 
@@ -13,44 +13,64 @@ def:pub short_date(iso: str) -> str {
 }
 
 def:pub ThoughtCard(
-    thought: ThoughtView,
-    connections: int,
+    item: GraphNode,
+    peers: int,
+    builds: list[str],
     onDelete: Callable[[str], None]
 ) -> JsxElement {
     def handle(_e: MouseEvent) {
-        onDelete(thought.id);
+        onDelete(item.id);
     }
 
-    tint = cat_color(thought.category);
+    tint = cat_color(item.category);
 
     return <article className="card">
         <div className="card-top">
             <span className="chip" style={{"background": tint + "26", "color": tint}}>
-                {thought.category}
+                {item.category}
             </span>
-            <span className="card-meta">{short_date(thought.created_at)}</span>
+            <span className="card-meta">{short_date(item.created_at)}</span>
             <button className="card-del" onClick={handle}>Forget</button>
         </div>
-        <p className="card-text">{thought.content}</p>
-        {if connections > 0 {
+        <p className="card-text">{item.detail}</p>
+        {if len(builds) > 0 {
+            <div className="build-strip">
+                {for name in builds {
+                    <span key={name} className="build-tag">{name}</span>
+                }}
+            </div>
+        }}
+        {if peers > 0 {
             <p className="card-links">
-                {"Linked to " + str(connections) + (" thought" if connections == 1 else " thoughts")}
+                {"Linked to " + str(peers) + (" thought" if peers == 1 else " thoughts")}
             </p>
         }}
     </article>;
 }
 
 def:pub Feed(
-    thoughts: list[ThoughtView],
-    links: list[LinkView],
+    nodes: list[GraphNode],
+    links: list[GraphLink],
     onDelete: Callable[[str], None]
 ) -> JsxElement {
-    degree: dict[str, int] = {};
-    for l in links {
-        degree[l.source] = degree[l.source] + 1 if l.source in degree else 1;
-        degree[l.target] = degree[l.target] + 1 if l.target in degree else 1;
+    label: dict[str, str] = {};
+    for n in nodes {
+        label[n.id] = n.label;
     }
 
+    peers: dict[str, int] = {};
+    builds: dict[str, list[str]] = {};
+    for l in links {
+        if l.kind == "builds" {
+            name = label[l.target] if l.target in label else "";
+            builds[l.source] = builds[l.source] + [name] if l.source in builds else [name];
+        } else {
+            peers[l.source] = peers[l.source] + 1 if l.source in peers else 1;
+            peers[l.target] = peers[l.target] + 1 if l.target in peers else 1;
+        }
+    }
+
+    thoughts = [n for n in nodes if n.kind == "thought"];
     ordered = thoughts[::-1];
 
     return <div className="scroll">
@@ -62,8 +82,9 @@ def:pub Feed(
         {for t in ordered {
             <ThoughtCard
                 key={t.id}
-                thought={t}
-                connections={degree[t.id] if t.id in degree else 0}
+                item={t}
+                peers={peers[t.id] if t.id in peers else 0}
+                builds={builds[t.id] if t.id in builds else []}
                 onDelete={onDelete}
             />
         }}

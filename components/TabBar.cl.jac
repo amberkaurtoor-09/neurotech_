@@ -64,7 +64,7 @@ def:pub TabBar(
                 <path d="M12 5v14M5 12h14"/>
             </svg>
         </button>
-        <Tab name="insights" label="Insights" active={active == "insights"} icon={spark} onSelect={onSelect}/>
+        <Tab name="skills" label="Skills" active={active == "skills"} icon={spark} onSelect={onSelect}/>
         <Tab name="me" label="Me" active={active == "me"} icon={me} onSelect={onSelect}/>
     </nav>;
 }

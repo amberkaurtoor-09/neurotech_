@@ -1,24 +1,33 @@
 """Neurotech - Server-Side Data Layer.
 
-A second brain is literally a graph, so it is stored as one. Each captured
-thought is a `Thought` node hanging off `root`; semantic relatedness between
-two thoughts is a typed `Link` edge carrying a weight. Nothing here is a
-table -- the brain IS the graph, and the UI draws it directly.
+A second brain is literally a graph, so it is stored as one:
 
-`LoadBrain` is a real walker: it traverses out from root, gathers every
-thought it enters, and reports the assembled view once on the way out.
-Creation and deletion are `def:pub` functions -- they touch the graph but
-never traverse it, so per `jac-walker-patterns` they would be "RPC in walker
-costume" as walkers.
+    Thought --Link--> Thought     semantic relatedness, weighted
+    Thought --Builds--> Skill     this memory contributed to that skill
+
+That second edge is the whole thesis of the app. Notes alone are a pile;
+notes wired to skills tell you what you are actually getting better at. A
+skill's mastery is not a number the user maintains, it is derived by counting
+the thoughts that point at it.
+
+`LoadBrain` is a real walker: it traverses out from root, gathers every node
+it enters, lays them out, and reports the assembled view once on the way out.
+Creation, deletion and seeding are `def:pub` functions -- they touch the graph
+but never traverse it, so per `jac-walker-patterns` they would be "RPC in
+walker costume" as walkers.
 
 Everything is `:pub` for now, meaning one shared `root` and no login. Switch
 to `:priv` to give every signed-in user their own isolated brain.
 """
 
 import math;
-import from datetime { datetime }
+import from datetime { datetime, timedelta }
 
+# Layout space. Portrait to match a phone: a square canvas letterboxes into
+# the middle third of the screen and wastes most of it. Keep these in sync
+# with the viewBox in components/BrainGraph.cl.jac.
 glob CANVAS: float = 1000.0;
+glob CANVAS_H: float = 1700.0;
 
 glob CATEGORIES: list[str] = [
     "idea", "memory", "goal", "learning", "health", "reflection"
@@ -33,6 +42,57 @@ glob KEYWORDS: dict[str, list[str]] = {
     "idea": ["what if", "idea", "could build", "concept", "imagine"]
 };
 
+"""The skills a thought can feed, and the words that signal each one.
+
+Ordered: a thought joins every skill it matches, so one memory can push more
+than one skill forward - which is exactly how learning actually works.
+"""
+obj SkillSpec {
+    has name: str,
+        blurb: str,
+        target: int,
+        words: list[str];
+}
+
+glob SKILLS: list[SkillSpec] = [
+    SkillSpec(
+        name="Object-Spatial Programming",
+        blurb="Thinking in nodes, edges and walkers",
+        target=6,
+        words=["jac", "walker", "graph", "node", "edge", "spawn", "traversal", "osp"]
+    ),
+    SkillSpec(
+        name="Frontend Craft",
+        blurb="Interfaces that feel considered",
+        target=6,
+        words=["react", "css", "layout", "component", "animation", "interface", "responsive", "svg"]
+    ),
+    SkillSpec(
+        name="Systems Thinking",
+        blurb="Seeing the whole, not the parts",
+        target=5,
+        words=["architecture", "system", "tradeoff", "scale", "latency", "bottleneck", "coupling"]
+    ),
+    SkillSpec(
+        name="Machine Learning",
+        blurb="Getting useful work out of models",
+        target=5,
+        words=["model", "llm", "embedding", "prompt", "inference", "training", "dataset"]
+    ),
+    SkillSpec(
+        name="Writing",
+        blurb="Turning thinking into prose",
+        target=4,
+        words=["write", "writing", "wrote", "essay", "draft", "blog", "article", "prose"]
+    ),
+    SkillSpec(
+        name="Focus & Recovery",
+        blurb="Sustaining the engine that does the work",
+        target=4,
+        words=["sleep", "slept", "rest", "focus", "tired", "workout", "walk", "burnout", "energy"]
+    )
+];
+
 node Thought {
     has content: str,
         category: str = "idea",
@@ -40,42 +100,57 @@ node Thought {
         strength: int = 1;
 }
 
+node Skill {
+    has name: str,
+        blurb: str = "",
+        target: int = 6;
+}
+
 edge Link: Thought --> Thought {
     has weight: float = 0.5;
 }
 
-obj ThoughtView {
+edge Builds: Thought --> Skill {
+    has weight: float = 1.0;
+}
+
+obj GraphNode {
     has id: str,
-        content: str,
+        kind: str,
+        label: str,
+        detail: str,
         category: str,
-        created_at: str,
         strength: int,
+        created_at: str = "",
         x: float = 0.0,
         y: float = 0.0;
 }
 
-obj LinkView {
+obj GraphLink {
     has source: str,
         target: str,
-        weight: float;
+        weight: float,
+        kind: str = "link";
+}
+
+obj Peer {
+    has score: float,
+        target: Thought;
+}
+
+obj SkillView {
+    has id: str,
+        name: str,
+        blurb: str,
+        reps: int,
+        target: int,
+        mastery: float;
 }
 
 obj BrainView {
-    has thoughts: list[ThoughtView] = [],
-        links: list[LinkView] = [];
-}
-
-"""Project a graph node into a wire-safe view the client can render."""
-def to_view(t: Thought, x: float = 0.0, y: float = 0.0) -> ThoughtView {
-    return ThoughtView(
-        id=jid(t),
-        content=t.content,
-        category=t.category,
-        created_at=t.created_at,
-        strength=t.strength,
-        x=x,
-        y=y
-    );
+    has nodes: list[GraphNode] = [],
+        links: list[GraphLink] = [],
+        skills: list[SkillView] = [];
 }
 
 """Lowercase the text down to space-delimited words, padded on both ends.
@@ -107,6 +182,21 @@ def classify(text: str) -> str {
     return "idea";
 }
 
+"""Every skill this thought plausibly moves forward."""
+def match_skills(text: str) -> list[SkillSpec] {
+    low = normalize(text);
+    hits: list[SkillSpec] = [];
+    for spec in SKILLS {
+        for w in spec.words {
+            if f" {w} " in low {
+                hits.append(spec);
+                break;
+            }
+        }
+    }
+    return hits;
+}
+
 """Content words of a thought, used for relatedness scoring."""
 def tokens(text: str) -> set[str] {
     stop = {
@@ -118,89 +208,150 @@ def tokens(text: str) -> set[str] {
     for raw in text.lower().split() {
         w = raw.strip(".,!?;:'\"()[]");
         if len(w) > 3 and w not in stop {
-            out.add(w);
+            # Poor man's stemming. Without it "walker" and "walkers" are
+            # unrelated strings, which is the most common false negative.
+            out.add(w[:-1] if len(w) > 4 and w.endswith("s") else w);
         }
     }
     return out;
 }
 
-"""Jaccard overlap of two thoughts' content words, 0.0 - 1.0."""
+"""Relatedness of two thoughts, 0.0 - 1.0.
+
+Overlap coefficient (shared words over the *smaller* vocabulary) rather than
+Jaccard. Jaccard divides by the union, so a short thought and a long one score
+near zero even when the short one is entirely contained in the long one -
+which is the single most common way two real notes relate.
+"""
 def similarity(a: str, b: str) -> float {
     ta = tokens(a);
     tb = tokens(b);
     if not ta or not tb {
         return 0.0;
     }
-    union = len(ta | tb);
-    if union == 0 {
+    smaller = min(len(ta), len(tb));
+    if smaller == 0 {
         return 0.0;
     }
-    return len(ta & tb) / union;
+    return len(ta & tb) / smaller;
 }
 
-"""Capture a thought, auto-categorize it, and wire it to related ones.
-
-The auto-linking is the whole point: the user never draws an edge, so the
-brain assembles its own structure as thoughts accumulate.
-"""
-def:pub create_thought(content: str, category: str = "") -> ThoughtView {
-    text = content.strip();
-    if not text {
-        return ThoughtView(id="", content="", category="idea", created_at="", strength=0);
+"""Find a skill node by name, creating it on first use."""
+def ensure_skill(sname: str, blurb: str, target: int) -> Skill {
+    found = [root -->[?:Skill, name == sname]];
+    if found {
+        return found[0];
     }
+    return root ++> Skill(name=sname, blurb=blurb, target=target);
+}
 
+"""Attach a thought to the graph: categorize, link to peers, feed skills."""
+def wire_thought(text: str, category: str, when: str) -> Thought {
     existing = [root -->[?:Thought]];
     cat = category if category in CATEGORIES else classify(text);
 
     fresh = root ++> Thought(
         content=text,
         category=cat,
-        created_at=datetime.now().isoformat(),
+        created_at=when,
         strength=1
     );
 
+    mine: set[str] = set();
+    for spec in match_skills(text) {
+        skill = ensure_skill(spec.name, spec.blurb, spec.target);
+        fresh +>:Builds(weight=1.0):+> skill;
+        mine.add(spec.name);
+    }
+
+    # Two thoughts relate mostly because they built the same skill, and only
+    # secondarily because they share words. Measured on the seed corpus, pure
+    # word overlap peaked at 0.14 and half its top pairs were coincidence
+    # ("whiteboard session" vs "slept badly"), so shared skills carry the
+    # weight and lexical overlap only breaks ties.
+    candidates: list[Peer] = [];
     for other in existing {
-        score = similarity(text, other.content);
-        if score >= 0.12 {
-            fresh +>:Link(weight=score):+> other;
-            other.strength = other.strength + 1;
+        theirs: set[str] = set();
+        for s in [other ->:Builds:->] {
+            theirs.add(s.name);
+        }
+
+        smaller = min(len(mine), len(theirs));
+        shared = len(mine & theirs) / smaller if smaller > 0 else 0.0;
+        score = 0.65 * shared + 0.35 * similarity(text, other.content);
+
+        if score >= 0.22 {
+            candidates.append(Peer(score=score, target=other));
         }
     }
 
-    return to_view(fresh);
+    # Cap per thought: linking everything above the threshold makes a hairball,
+    # and a hairball is not a map.
+    ranked = sorted(candidates, key=lambda (p: Peer) -> float { return p.score; }, reverse=True);
+    for peer in ranked[:3] {
+        fresh +>:Link(weight=peer.score):+> peer.target;
+        peer.target.strength = peer.target.strength + 1;
+    }
+
+    return fresh;
+}
+
+"""Capture a thought, auto-categorize it, and wire it into the graph.
+
+The auto-wiring is the point: the user never draws an edge, so the brain
+assembles its own structure - and its own picture of what they are learning.
+"""
+def:pub create_thought(content: str, category: str = "") -> bool {
+    text = content.strip();
+    if not text {
+        return False;
+    }
+    _ = wire_thought(text, category, datetime.now().isoformat());
+    return True;
+}
+
+"""Forget a thought. Deleting the node cascades to all of its edges."""
+def:pub delete_thought(id: str) -> bool {
+    target = jobj(id);
+    if isinstance(target, Thought) {
+        del target;
+        return True;
+    }
+    return False;
 }
 
 """Force-directed layout over a 1000x1000 space.
 
 Deterministic on purpose: seeded by phyllotaxis rather than an RNG, so the
-same brain lays out identically on every load and neurons don't teleport
-between refreshes. Linked thoughts pull together, everything else pushes
+same brain lays out identically on every load and nodes don't teleport
+between refreshes. Connected nodes pull together, everything else pushes
 apart, and gravity keeps the cluster centered.
 """
-def layout(ids: list[str], links: list[LinkView]) -> dict[str, list[float]] {
+def layout(ids: list[str], links: list[GraphLink]) -> dict[str, list[float]] {
     pos: dict[str, list[float]] = {};
     n = len(ids);
     center = CANVAS / 2.0;
+    middle = CANVAS_H / 2.0;
 
     if n == 0 {
         return pos;
     }
     if n == 1 {
-        pos[ids[0]] = [center, center];
+        pos[ids[0]] = [center, middle];
         return pos;
     }
 
-    spread = CANVAS * 0.30;
+    spread = CANVAS * 0.34;
     for (i, tid) in enumerate(ids) {
         angle = 2.399963 * i;
         r = spread * math.sqrt((i + 1.0) / n);
-        pos[tid] = [center + r * math.cos(angle), center + r * math.sin(angle)];
+        pos[tid] = [center + r * math.cos(angle), middle + r * math.sin(angle) * 1.5];
     }
 
-    repel = CANVAS * CANVAS * 0.055;
-    rest = CANVAS * 0.16;
-    margin = CANVAS * 0.09;
-    steps = 240;
+    repel = CANVAS * CANVAS * 0.048;
+    rest = CANVAS * 0.15;
+    margin = CANVAS * 0.07;
+    steps = 260;
 
     for step in range(steps) {
         cool = 1.0 - (step / steps);
@@ -251,8 +402,8 @@ def layout(ids: list[str], links: list[LinkView]) -> dict[str, list[float]] {
 
         cap = CANVAS * 0.05 * cool + 0.5;
         for tid in ids {
-            vx = (push[tid][0] + (center - pos[tid][0]) * 0.035) * 0.016;
-            vy = (push[tid][1] + (center - pos[tid][1]) * 0.035) * 0.016;
+            vx = (push[tid][0] + (center - pos[tid][0]) * 0.030) * 0.016;
+            vy = (push[tid][1] + (middle - pos[tid][1]) * 0.018) * 0.016;
             mag = math.sqrt(vx * vx + vy * vy);
             if mag > cap {
                 vx = vx / mag * cap;
@@ -260,69 +411,214 @@ def layout(ids: list[str], links: list[LinkView]) -> dict[str, list[float]] {
             }
             pos[tid] = [
                 max(margin, min(CANVAS - margin, pos[tid][0] + vx)),
-                max(margin, min(CANVAS - margin, pos[tid][1] + vy))
+                max(margin, min(CANVAS_H - margin, pos[tid][1] + vy))
             ];
         }
     }
 
-    return pos;
+    return refit(pos, ids);
 }
 
-"""Forget a thought. Deleting the node cascades to all of its links."""
-def:pub delete_thought(id: str) -> bool {
-    target = jobj(id);
-    if isinstance(target, Thought) {
-        del target;
-        return True;
+"""Scale the settled layout out to fill the canvas.
+
+Force simulation converges to whatever size the forces balance at, which for
+a small graph is a little clump in the middle of a big empty frame. Rescaling
+the bounding box to the viewport is what makes the graph look designed rather
+than merely simulated. Uniform scale, so relative distances survive.
+"""
+def refit(pos: dict[str, list[float]], ids: list[str]) -> dict[str, list[float]] {
+    if len(ids) < 2 {
+        return pos;
     }
-    return False;
+
+    xs = [pos[i][0] for i in ids if i in pos];
+    ys = [pos[i][1] for i in ids if i in pos];
+    if not xs or not ys {
+        return pos;
+    }
+
+    pad = CANVAS * 0.13;
+    span_x = max(xs) - min(xs);
+    span_y = max(ys) - min(ys);
+    if span_x < 1.0 or span_y < 1.0 {
+        return pos;
+    }
+
+    scale = min((CANVAS - pad * 2.0) / span_x, (CANVAS_H - pad * 2.0) / span_y);
+    off_x = (CANVAS - span_x * scale) / 2.0 - min(xs) * scale;
+    off_y = (CANVAS_H - span_y * scale) / 2.0 - min(ys) * scale;
+
+    out: dict[str, list[float]] = {};
+    for i in ids {
+        if i in pos {
+            out[i] = [pos[i][0] * scale + off_x, pos[i][1] * scale + off_y];
+        }
+    }
+    return out;
+}
+
+"""A believable brain, so the graph has something to say on first open.
+
+Dated backwards from today so the feed reads like real use rather than
+seventeen thoughts captured in the same second.
+"""
+glob DEMO: list[list[str]] = [
+    ["Walkers finally clicked - the walker moves to the data instead of me querying for it", "learning"],
+    ["What if every note in my brain was a node and the edges were computed, not typed by hand", "idea"],
+    ["Spent the evening on graph traversal in Jac, visit queues are breadth-first by default", "learning"],
+    ["I want to ship a working demo of the second brain before the deadline", "goal"],
+    ["Read that spaced repetition works because retrieval is the thing that strengthens memory", "learning"],
+    ["Remember the whiteboard session where we drew the whole architecture in one diagram", "memory"],
+    ["The React component tree got messy until I moved all state into one shell component", "learning"],
+    ["Slept badly again, and the whole morning of debugging was basically wasted", "health"],
+    ["Went for a long walk and the layout bug solved itself somewhere around the second mile", "health"],
+    ["I feel like I understand systems thinking better when I draw the tradeoff explicitly", "reflection"],
+    ["An LLM prompt is really just a very expensive function call, budget it like one", "learning"],
+    ["Idea: let the model propose edges between notes and let me approve them", "idea"],
+    ["Wrote a draft of the essay about why note apps fail at retrieval", "learning"],
+    ["The CSS animation looked cheap until I slowed the easing curve down", "learning"],
+    ["Realized lately that I learn architecture fastest by rebuilding something I already know", "reflection"],
+    ["Embedding search returned nonsense until I normalized the vectors first", "learning"],
+    ["Goal for next month: write one essay a week and actually publish them", "goal"],
+    ["We met at the meetup and talked about scale and latency tradeoffs for an hour", "memory"]
+];
+
+"""Populate an empty brain with demo data. Returns how many were added."""
+def:pub seed_demo() -> int {
+    if [root -->[?:Thought]] {
+        return 0;
+    }
+
+    start = datetime.now() - timedelta(days=len(DEMO));
+    for (i, row) in enumerate(DEMO) {
+        when = (start + timedelta(days=i, hours=i % 7)).isoformat();
+        _ = wire_thought(row[0], row[1], when);
+    }
+    return len(DEMO);
+}
+
+"""Erase the whole brain - every thought, skill and edge."""
+def:pub reset_brain() -> int {
+    gone = 0;
+    for t in [root -->[?:Thought]] {
+        del t;
+        gone += 1;
+    }
+    for s in [root -->[?:Skill]] {
+        del s;
+    }
+    return gone;
 }
 
 walker:pub LoadBrain {
-    """Traverse the brain and report its nodes plus its edges as one view."""
+    """Traverse the brain and report its nodes, edges and skill progress."""
 
-    has found: list[Thought] = [],
+    has thoughts: list[Thought] = [],
+        skills: list[Skill] = [],
+        nodes: list[GraphNode] = [],
+        links: list[GraphLink] = [],
         reports: list[BrainView] = [];
 
     can start with Root entry {
-        visit [-->[?:Thought]];
+        visit [-->];
     }
 
-    can gather with Thought entry {
-        self.found.append(here);
+    can gather_thought with Thought entry {
+        self.thoughts.append(here);
+    }
+
+    can gather_skill with Skill entry {
+        self.skills.append(here);
     }
 
     can assemble with Root exit {
-        links: list[LinkView] = [];
         ids: list[str] = [];
+        reps: dict[str, int] = {};
 
-        for t in self.found {
-            ids.append(jid(t));
+        for t in self.thoughts {
+            tid = jid(t);
+            ids.append(tid);
+
             for other in [t ->:Link:->] {
                 weight = 0.5;
                 for e in [edge t ->:Link:-> other] {
                     weight = e.weight;
                 }
-                links.append(
-                    LinkView(source=jid(t), target=jid(other), weight=weight)
+                self.links.append(
+                    GraphLink(source=tid, target=jid(other), weight=weight, kind="link")
+                );
+            }
+
+            for skill in [t ->:Builds:->] {
+                sid = jid(skill);
+                reps[sid] = reps[sid] + 1 if sid in reps else 1;
+                self.links.append(
+                    GraphLink(source=tid, target=sid, weight=1.0, kind="builds")
                 );
             }
         }
 
-        pos = layout(ids, links);
-        thoughts: list[ThoughtView] = [];
+        for s in self.skills {
+            ids.append(jid(s));
+        }
 
-        for t in self.found {
+        pos = layout(ids, self.links);
+
+        for t in self.thoughts {
             tid = jid(t);
             px = CANVAS / 2.0;
-            py = CANVAS / 2.0;
+            py = CANVAS_H / 2.0;
             if tid in pos {
                 px = pos[tid][0];
                 py = pos[tid][1];
             }
-            thoughts.append(to_view(t, px, py));
+            words = t.content.split();
+            label = " ".join(words[:4]) if len(words) > 4 else t.content;
+            self.nodes.append(GraphNode(
+                id=tid,
+                kind="thought",
+                label=label,
+                detail=t.content,
+                category=t.category,
+                strength=t.strength,
+                created_at=t.created_at,
+                x=px,
+                y=py
+            ));
         }
 
-        report BrainView(thoughts=thoughts, links=links);
+        views: list[SkillView] = [];
+        for s in self.skills {
+            sid = jid(s);
+            px = CANVAS / 2.0;
+            py = CANVAS_H / 2.0;
+            if sid in pos {
+                px = pos[sid][0];
+                py = pos[sid][1];
+            }
+            hits = reps[sid] if sid in reps else 0;
+            mastery = 1.0 if hits >= s.target else hits / s.target;
+
+            self.nodes.append(GraphNode(
+                id=sid,
+                kind="skill",
+                label=s.name,
+                detail=s.blurb,
+                category="skill",
+                strength=hits,
+                x=px,
+                y=py
+            ));
+            views.append(SkillView(
+                id=sid,
+                name=s.name,
+                blurb=s.blurb,
+                reps=hits,
+                target=s.target,
+                mastery=mastery
+            ));
+        }
+
+        report BrainView(nodes=self.nodes, links=self.links, skills=views);
     }
 }

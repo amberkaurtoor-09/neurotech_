@@ -35,8 +35,11 @@ def:pub cat_color(name: str) -> str {
     return "#8b7cf6";
 }
 
-"""Neuron radius grows with how many other thoughts link to it."""
-def:pub neuron_radius(strength: int) -> float {
+"""Node radius. Skills read as hubs; thoughts grow with how often they connect."""
+def:pub node_radius(kind: str, strength: int) -> float {
     capped = strength if strength < 8 else 8;
-    return 17.0 + capped * 3.4;
+    if kind == "skill" {
+        return 24.0 + capped * 2.6;
+    }
+    return 13.0 + capped * 2.8;
 }
