@@ -148,7 +148,12 @@ def:pub app -> JsxElement {
 
     thoughtCount = len([n for n in nodes if n.kind == "thought"]);
 
-    return <div className="shell">
+    return <div className="device-scene">
+        <div className="iphone">
+            <div className="iphone-frame">
+                <div className="iphone-island" aria-hidden="true"></div>
+                <div className="iphone-screen">
+                    <div className="shell">
         {if error {
             <div key="toast" className="toast" role="alert">
                 <span>{error}</span>
@@ -277,5 +282,10 @@ def:pub app -> JsxElement {
                 onCancel={cancelDelete}
             />
         }}
+                    </div>
+                </div>
+                <div className="iphone-bar" aria-hidden="true"></div>
+            </div>
+        </div>
     </div>;
 }

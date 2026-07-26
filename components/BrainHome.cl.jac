@@ -1,7 +1,7 @@
-"""Brain home - daily second-brain workspace.
+"""Brain home - futuristic first tab.
 
-One spectacular moment (the constellation), then quiet utility:
-continue + recent thoughts. Graph exploration lives on the Graph tab.
+Hero is the brain visual (teammate art at assets/brain.png). Recent
+thoughts sit below. Tap the brain to open the Graph tab.
 """
 
 sv import from endpoints { GraphNode, GraphLink, SkillView }
@@ -32,7 +32,8 @@ def:pub BrainHome(
     onDemo: Callable[[], None],
     onOpenGraph: Callable[[], None]
 ) -> JsxElement {
-    has query: str = "";
+    has query: str = "",
+        useFallback: bool = False;
 
     thoughts = [n for n in nodes if n.kind == "thought"];
     total = len(thoughts);
@@ -47,15 +48,9 @@ def:pub BrainHome(
     }
 
     ordered = filtered[::-1];
-    recent = ordered[:5] if len(ordered) > 5 else ordered;
+    recent = ordered[:8] if len(ordered) > 8 else ordered;
 
-    strongest = sorted(skills, key=lambda (s: SkillView) -> float { return 0.0 - s.mastery; });
-    contName = "";
-    contPct = 0.0;
-    if len(strongest) > 0 {
-        contName = strongest[0].name;
-        contPct = strongest[0].mastery * 100.0;
-    }
+    caption = str(total) + " thoughts · " + str(len(skills)) + " skills";
 
     def onQueryChange(e: any) {
         query = e.target.value;
@@ -73,37 +68,43 @@ def:pub BrainHome(
         onOpenGraph();
     }
 
+    def artFailed(_e: any) {
+        useFallback = True;
+    }
+
     return <div className="scroll brain-home">
-        <header className="brain-top">
+        <header className="brain-top compact">
             <p className="brain-mark">Neurotech</p>
-            <h1 className="greeting">Good afternoon, Mercedes</h1>
-            <label className="search-bar">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    strokeWidth="1.8" strokeLinecap="round">
-                    <circle cx="11" cy="11" r="7"/>
-                    <path d="M20 20l-3.5-3.5"/>
-                </svg>
-                <input
-                    className="search-input"
-                    placeholder="Search"
-                    value={query}
-                    onChange={onQueryChange}
-                />
-            </label>
         </header>
 
-        <MiniConstellation
-            nodes={nodes}
-            links={links}
-            thoughtCount={total}
-            skillCount={len(skills)}
-            onOpen={openGraph}
-        />
+        {if useFallback {
+            <MiniConstellation
+                key="fallback"
+                nodes={nodes}
+                links={links}
+                thoughtCount={total}
+                skillCount={len(skills)}
+                onOpen={openGraph}
+            />
+        } else {
+            <button key="art" className="brain-stage" onClick={openGraph} aria-label="Open graph">
+                <div className="brain-stage-void">
+                    <img
+                        className="brain-visual"
+                        src="/static/assets/brain.png"
+                        alt="Your second brain"
+                        onError={artFailed}
+                    />
+                    <div className="brain-stage-fog" aria-hidden="true"></div>
+                </div>
+                <p className="brain-stage-caption">{caption if total > 0 else "Your mind, mapped"}</p>
+            </button>
+        }}
 
         {if total == 0 {
             <div key="empty" className="brain-empty">
                 <h2>Nothing captured yet</h2>
-                <p>Add a thought and it becomes a node in the constellation.</p>
+                <p>Add a thought and it becomes part of your brain.</p>
                 <button className="primary-btn" onClick={capture} disabled={busy}>
                     Capture a thought
                 </button>
@@ -114,23 +115,18 @@ def:pub BrainHome(
             skip;
         }}
 
-        {if contName {
-            <section key="continue" className="home-section">
-                <button className="continue-row" onClick={openGraph}>
-                    <div className="continue-head">
-                        <span className="continue-kicker">Continue</span>
-                        <span className="continue-pct">{str(round(contPct)) + "%"}</span>
-                    </div>
-                    <span className="continue-name">{contName}</span>
-                    <div className="bar-track tall">
-                        <span className="bar-fill accent" style={{"width": str(contPct) + "%"}}></span>
-                    </div>
-                </button>
-            </section>
-        }}
-
         <section className="home-section">
-            <h2 className="section-label">Recent</h2>
+            <div className="section-row">
+                <h2 className="section-label">Recent</h2>
+                <label className="search-inline">
+                    <input
+                        className="search-input"
+                        placeholder="Search"
+                        value={query}
+                        onChange={onQueryChange}
+                    />
+                </label>
+            </div>
             {if len(recent) == 0 {
                 <p className="empty-inline">No matches.</p>
                 skip;

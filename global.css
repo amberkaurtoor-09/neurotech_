@@ -77,18 +77,180 @@ body {
   overscroll-behavior: none;
 }
 
+/* ── iPhone device mock (desktop) ──────────────────────────────────── */
+
+.device-scene {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 40%, #5b8cff12 0%, transparent 55%),
+    radial-gradient(ellipse 100% 80% at 50% 100%, #000 0%, transparent 50%),
+    #141416;
+}
+
+.iphone {
+  /* Height-first so the frame fits typical desktop viewports with ~24px gutters */
+  height: min(844px, calc(100dvh - 48px));
+  width: auto;
+  max-width: calc(100vw - 32px);
+  aspect-ratio: 390 / 844;
+  filter: drop-shadow(0 28px 60px #000000aa) drop-shadow(0 0 0 1px #ffffff08);
+}
+
+.iphone-frame {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  padding: 11px;
+  border-radius: 54px;
+  background: linear-gradient(160deg, #3a3a3e 0%, #1c1c1f 40%, #0e0e10 100%);
+  box-shadow:
+    inset 0 0 0 1px #ffffff18,
+    inset 0 0 0 3px #2a2a2e,
+    inset 0 1px 0 #ffffff22;
+}
+
+.iphone-frame::before {
+  /* side buttons hint */
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 120px;
+  width: 3px;
+  height: 28px;
+  border-radius: 2px 0 0 2px;
+  background: #2c2c30;
+  box-shadow: 0 46px 0 #2c2c30, 0 92px 0 #2c2c30;
+}
+
+.iphone-frame::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 180px;
+  width: 3px;
+  height: 64px;
+  border-radius: 0 2px 2px 0;
+  background: #2c2c30;
+}
+
+.iphone-island {
+  position: absolute;
+  z-index: 20;
+  top: 22px;
+  left: 50%;
+  width: 118px;
+  height: 34px;
+  transform: translateX(-50%);
+  border-radius: 20px;
+  background: #000;
+  box-shadow: inset 0 0 0 1px #ffffff08;
+  pointer-events: none;
+}
+
+.iphone-screen {
+  position: relative;
+  height: 100%;
+  border-radius: 44px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px #ffffff10;
+}
+
+.iphone-bar {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  bottom: 18px;
+  width: 128px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #ffffff55;
+  pointer-events: none;
+}
+
 /* ── Shell ─────────────────────────────────────────────────────────── */
 
 .shell {
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  max-width: 430px;
-  margin: 0 auto;
+  height: 100%;
+  max-width: none;
+  margin: 0;
   overflow: hidden;
   background: var(--bg);
-  border-inline: 1px solid #ffffff08;
+}
+
+.shell .scroll {
+  padding-top: 44px; /* clear dynamic island */
+}
+
+.shell .graph-chrome {
+  padding-top: 48px;
+}
+
+.shell .tabbar {
+  padding-bottom: 18px; /* clear home indicator */
+}
+
+/* Real phone / narrow viewport: go edge-to-edge */
+@media (max-width: 520px) {
+  .device-scene {
+    display: block;
+    padding: 0;
+    min-height: 100dvh;
+    background: var(--bg);
+  }
+
+  .iphone {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: auto;
+    filter: none;
+  }
+
+  .iphone-frame {
+    height: 100dvh;
+    width: 100%;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .iphone-frame::before,
+  .iphone-frame::after,
+  .iphone-island,
+  .iphone-bar {
+    display: none;
+  }
+
+  .iphone-screen {
+    border-radius: 0;
+    height: 100%;
+    box-shadow: none;
+  }
+
+  .shell {
+    height: 100dvh;
+  }
+
+  .shell .scroll {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .shell .graph-chrome {
+    padding-top: max(14px, env(safe-area-inset-top));
+  }
+
+  .shell .tabbar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* ── Header ────────────────────────────────────────────────────────── */
@@ -1049,6 +1211,10 @@ body {
   margin-bottom: 4px;
 }
 
+.brain-top.compact {
+  margin-bottom: 0;
+}
+
 .brain-mark {
   margin: 0;
   font-size: var(--fs-sm);
@@ -1063,6 +1229,86 @@ body {
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.12;
+}
+
+/* ── Brain hero stage (teammate art) ───────────────────────────────── */
+
+.brain-stage {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  margin: 10px 0 8px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: #050507;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.brain-stage:active { transform: scale(0.995); }
+
+.brain-stage-void {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-height: min(52vh, 360px);
+  background: #050507;
+  overflow: hidden;
+}
+
+.brain-visual {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  animation: brain-breathe 6s ease-in-out infinite;
+}
+
+.brain-stage-fog {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%, #5b8cff14 0%, transparent 58%),
+    linear-gradient(180deg, transparent 62%, #0a0a0c 100%);
+}
+
+.brain-stage-caption {
+  margin: 0;
+  padding: 12px 14px 14px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: -0.01em;
+  border-top: 1px solid var(--border);
+  background: #08080a;
+}
+
+@keyframes brain-breathe {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+.search-inline {
+  display: block;
+  min-width: 120px;
+  max-width: 46%;
+  margin-bottom: 10px;
+  padding: 0 10px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elev);
+}
+
+.search-inline .search-input {
+  width: 100%;
+  height: 100%;
+  font-size: var(--fs-sm);
 }
 
 /* ── Constellation hero ────────────────────────────────────────────── */
